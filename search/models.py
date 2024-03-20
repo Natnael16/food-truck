@@ -21,7 +21,7 @@ class FoodTruck(Document):
     food_items = ListField(StringField(max_length=255))
     approved_at = DateTimeField()
     location = PointField(required=True)
-    days_hours = DictField()
+    open_hours = DictField()
 
     meta = {
         'indexes': [
