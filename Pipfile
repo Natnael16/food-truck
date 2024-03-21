@@ -9,6 +9,9 @@ pymongo = {extras = ["srv"], version = "*"}
 djangorestframework = "*"
 markdown = "*"
 django-filter = "*"
+mongoengine = "*"
+pandas = "*"
+django-rest-framework-mongoengine = "*"
 
 [dev-packages]
 
