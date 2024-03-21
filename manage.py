@@ -2,7 +2,6 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-from foodTruck.seed_data import seed_data
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'foodTruck.settings')
@@ -16,7 +15,6 @@ def main():
         ) from exc
     execute_from_command_line(sys.argv)
     # populate the database with the data from the csv file
-    seed_data()
 
 
 if __name__ == '__main__':
