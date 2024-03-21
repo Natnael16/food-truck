@@ -7,10 +7,8 @@ from . import db_connection
 food_truck_collection = db_connection.db['food_truck']
 
 def seed_data():
-    # check if the data has been seeded
-    collection_size = food_truck_collection.count_documents({})
-    if collection_size != 0:
-        return
+    
+    food_truck_collection.delete_many({})
     # Read the CSV file into a DataFrame
     csv_file_path = 'data/food-truck-data.csv'
     
@@ -19,7 +17,7 @@ def seed_data():
         for row in reader:
             data = {
                     'applicant': str(row['Applicant']),
-                    'facility_type': str(row['FacilityType']),
+                    'facility_type': str(row['FacilityType']) if row['FacilityType'] else 'Unknown',
                     'location_description': str(row['LocationDescription']),
                     'address': str(row['Address']),
                     'status': str(row['Status']),
@@ -28,7 +26,8 @@ def seed_data():
                     'location': {'type': 'Point', 'coordinates': [float(row['Longitude']), float(row['Latitude'])]},  # GeoJSON format for coordinates
                     'open_hours' : utils.parse_open_hours(row['dayshours'])
                 }
-            food_truck_collection.insert_one(data)
+            result = food_truck_collection.insert_one(data)
+            # TODO: seed the food data
         
 
     print('Data seeded successfully')

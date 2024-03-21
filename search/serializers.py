@@ -1,7 +1,7 @@
-from rest_framework import serializers
+from rest_framework_mongoengine.serializers import DocumentSerializer
 from .models import FoodTruck
 
-class FoodTruckSerializer(serializers.ModelSerializer):
+class FoodTruckSerializer(DocumentSerializer):
     class Meta:
         model = FoodTruck
-        fields = '__all__'
+        fields = '__all__'  

@@ -1,4 +1,3 @@
-from django.db import models
 from mongoengine import Document, StringField, ListField, DictField, PointField,DateTimeField
 
 class FoodTruck(Document):
@@ -25,7 +24,7 @@ class FoodTruck(Document):
 
     meta = {
         'indexes': [
-            {'fields': ['applicant'], 'unique': True},
+            {'fields': ['applicant']},
             {'fields': ['location'], 'type': '2dsphere'}  # Index for geospatial queries
         ]
     }
