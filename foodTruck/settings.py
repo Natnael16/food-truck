@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'search',
-    'rest_framework_mongoengine'
+    'rest_framework_mongoengine',
+    'foods',
 ]
 
 MIDDLEWARE = [
