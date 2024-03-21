@@ -1,10 +1,10 @@
-
+from rest_framework import status as http_status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import FoodTruckSerializer
 from django.http import JsonResponse
 from foodTruck.db_connection import db
-
+from .utils import validate_location
 
 # get food truck collection
 food_truck_collection = db['food_truck']
@@ -12,11 +12,15 @@ food_truck_collection = db['food_truck']
 # Create your views here.
 class NearbyFoodTrucks(APIView):
     def get(self, request):
-        # recieve radius and locaiton [lat, log] from request
         query_params = request.query_params
-        location = query_params.get('location', None)  # Location coordinates
-        radius = query_params.get('radius', None)
-        #! validate query parameters
+        latitude = float(query_params.get('latitude', 0))  # Assuming latitude is provided as a float
+        longitude = float(query_params.get('longitude', 0)) 
+        is_valid = validate_location(latitude,longitude)
+        location = [longitude, latitude]      
+        if not is_valid:
+            return Response({'error_message': "{} is not a valid location.".format(list(reversed(location))),}, status=http_status.HTTP_400_BAD_REQUEST)
+        
+        radius = float(query_params.get('radius', 1000))
         # A query that filters food tracks with in <radius> meters from the <location> center
         query = {
         'location': {
@@ -26,7 +30,6 @@ class NearbyFoodTrucks(APIView):
                     'coordinates': location
                     },
                 '$maxDistance': radius, 
-                'spherical': True
  
                 }
             }
@@ -51,8 +54,15 @@ class SearchFoodTrucks(APIView):
         search_query = query_params.get('q', '')  # Search query
         status = query_params.get('status', None)  # Status filter
         facility_type = query_params.get('facility_type', None)  # Facility type filter
-        location = query_params.get('location', None)  # Location coordinates
+        latitude = query_params.get('latitude', None)  # latitude coordinate
+        longitude = query_params.get('longitude', None)  # longitude coordinate
         radius = query_params.get('radius', None)# Radius for geospatial search
+        
+        if latitude and longitude:
+            is_valid = validate_location(float(latitude),float(longitude))
+            if not is_valid:
+                return Response({'error_message': "{}, {} is not a valid location".format(latitude,longitude)},status=http_status.HTTP_400_BAD_REQUEST)
+        
 
         # MongoDB connection
         pipeline = []
@@ -75,16 +85,14 @@ class SearchFoodTrucks(APIView):
         if facility_type:
             match_stage['facility_type'] = facility_type
         
-        # if geolocation included it should be a separate dictionary starting with $geoNear separated with a comma
-        if location and radius:
+        if latitude and longitude and radius:
 
             # Geospatial query stage
-            longitude, latitude = map(float, reversed(str(location).split(','))) # lat,long format for locaiton
             pipeline.append({
                 '$geoNear': {
                     'near': {
                         'type': 'Point',
-                        'coordinates': [longitude, latitude]
+                        'coordinates': [float(longitude), float(latitude)]
                     },
                     'distanceField': 'distance',
                     'maxDistance': float(radius),
@@ -100,19 +108,10 @@ class SearchFoodTrucks(APIView):
         # Execute the aggregation pipeline
         result = food_truck_collection.aggregate(pipeline)
 
-        # Iterate over results and check availability
-        # for truck in result:
-        #     truck['is_available_now'] = self.check_availability(truck.get('open_hours'))
+        
+        result = list(result)
+        return JsonResponse({"count" :len(result),  'data':result }, safe=False)
 
-        return JsonResponse(list(result), safe=False)
-
-    def check_availability(self, open_hours):
-        # Implement logic to check availability based on open hours
-        # Return True if available, False otherwise
-        # Example implementation:
-        # current_time = datetime.now().time()
-        # Implement your logic to check if current_time falls within any open hours
-        pass
  
     
     
