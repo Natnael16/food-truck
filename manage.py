@@ -14,7 +14,6 @@ def main():
             "forget to activate a virtual environment?"
         ) from exc
     execute_from_command_line(sys.argv)
-    # populate the database with the data from the csv file
 
 
 if __name__ == '__main__':

@@ -2,20 +2,22 @@ from django.test import TestCase, Client
 from unittest.mock import patch
 from .views import food_truck_collection
 from .serializers import FoodTruckSerializer
-from .utils import parse_open_hours,validate_location_params
+from .utils import parse_open_hours, validate_location_params
+
 class NearByFoodTrucksTest(TestCase):
     def setUp(self):
+        # Mock data for FoodTruck document
         self.mock_return_value = {
-                    'applicant': 'mock',
-                    'facility_type': 'Truck',
-                    'location_description': 'mock location description',
-                    'address': "mock address",
-                    'status': "Approved",
-                    'food_items': [], 
-                    'approved_at': None,
-                    'location': {'type': 'Point', 'coordinates': [0, 0]},  # GeoJSON format for coordinates
-                    'open_hours' : {}
-                }
+            'applicant': 'mock',
+            'facility_type': 'Truck',
+            'location_description': 'mock location description',
+            'address': "mock address",
+            'status': "Approved",
+            'food_items': [], 
+            'approved_at': None,
+            'location': {'type': 'Point', 'coordinates': [0, 0]},  # GeoJSON format for coordinates
+            'open_hours' : {}
+        }
         self.client = Client()
 
     @patch.object(food_truck_collection, 'find')
@@ -23,11 +25,12 @@ class NearByFoodTrucksTest(TestCase):
         # Mock the MongoDB find method
         mock_find.return_value = [
             self.mock_return_value
-            ]
+        ]
 
+        # Make GET request to the endpoint with valid parameters
         response = self.client.get('/api/foodtruck/nearby/', {'latitude': 0, 'longitude': 0, 'radius': 1000})
 
-        # Check that the response status code is 200 (OK)
+        # Assert that the response status code is 200 (OK)
         self.assertEqual(response.status_code, 200)
 
         # Check the response data
@@ -42,27 +45,28 @@ class NearByFoodTrucksTest(TestCase):
         # Mock the MongoDB find method
         mock_find.return_value = [
             self.mock_return_value
-            ]
+        ]
 
-        response = self.client.get('/api/foodtruck/nearby/', {'latitude': -95, 'longitude': 0, 'radius': 1000}) #having invalid latitude to make it fail
+        # Make GET request to the endpoint with invalid latitude
+        response = self.client.get('/api/foodtruck/nearby/', {'latitude': -95, 'longitude': 0, 'radius': 1000})
 
-        # Check that the response status code is 200 (OK)
+        # Assert that the response status code is 400 (Bad Request)
         self.assertEqual(response.status_code, 400)
-        
-        
+
 class GetAllFoodTrucksTest(TestCase):
     def setUp(self):
+        # Mock data for FoodTruck document
         self.mock_return_value = {
-                    'applicant': 'mock',
-                    'facility_type': 'Truck',
-                    'location_description': 'mock location description',
-                    'address': "mock address",
-                    'status': "Approved",
-                    'food_items': [], 
-                    'approved_at': None,
-                    'location': {'type': 'Point', 'coordinates': [0, 0]},  # GeoJSON format for coordinates
-                    'open_hours' : {}
-                }
+            'applicant': 'mock',
+            'facility_type': 'Truck',
+            'location_description': 'mock location description',
+            'address': "mock address",
+            'status': "Approved",
+            'food_items': [], 
+            'approved_at': None,
+            'location': {'type': 'Point', 'coordinates': [0, 0]},  # GeoJSON format for coordinates
+            'open_hours' : {}
+        }
         self.client = Client()
         
     @patch.object(food_truck_collection, 'find')
@@ -72,10 +76,13 @@ class GetAllFoodTrucksTest(TestCase):
             self.mock_return_value
         ]
 
+        # Make GET request to the endpoint
         response = self.client.get('/api/foodtruck/all/')
 
+        # Assert that the response status code is 200 (OK)
         self.assertEqual(response.status_code, 200)
 
+        # Check the response data
         expected_data = {
             'count': 1,
             'data': mock_find.return_value
@@ -85,6 +92,7 @@ class GetAllFoodTrucksTest(TestCase):
  
 class SearchFoodTrucksTest(TestCase):
     def setUp(self):
+        # Mock data for FoodTruck document
         self.mock_return_value = [{
             'applicant': 'mock',
             'facility_type': 'Truck',
@@ -103,6 +111,7 @@ class SearchFoodTrucksTest(TestCase):
         # Mock the MongoDB aggregate method
         mock_aggregate.return_value = self.mock_return_value
 
+        # Make GET request to the endpoint
         response = self.client.get('/api/foodtruck/search/')
 
         # Check that the response status code is 200 (OK)
@@ -120,6 +129,7 @@ class SearchFoodTrucksTest(TestCase):
         # Mock the MongoDB aggregate method
         mock_aggregate.return_value = self.mock_return_value
 
+        # Make GET request to the endpoint with valid location parameters
         response = self.client.get('/api/foodtruck/search/', {'latitude': 0, 'longitude': 0, 'radius': 50})
 
         # Check that the response status code is 200 (OK)
@@ -137,7 +147,7 @@ class SearchFoodTrucksTest(TestCase):
         # Mock the MongoDB aggregate method
         mock_aggregate.return_value = self.mock_return_value
 
-        # Send request with invalid latitude and longitude
+        # Make GET request to the endpoint with invalid latitude and longitude
         response = self.client.get('/api/foodtruck/search/', {'latitude': 'invalid', 'longitude': 'invalid'})
 
         # Check that the response status code is 400 (Bad Request)
@@ -151,7 +161,7 @@ class SearchFoodTrucksTest(TestCase):
         # Mock the MongoDB aggregate method
         mock_aggregate.return_value = self.mock_return_value
 
-        # Send request with invalid latitude and longitude
+        # Make GET request to the endpoint with latitude and longitude out of range
         response = self.client.get('/api/foodtruck/search/', {'latitude': 50, 'longitude': 300})
 
         # Check that the response status code is 400 (Bad Request)
@@ -165,15 +175,14 @@ class SearchFoodTrucksTest(TestCase):
         # Mock the MongoDB aggregate method to return an empty list
         mock_aggregate.return_value = []
 
-        # Send request with valid parameters but no matching results
+        # Make GET request to the endpoint with a search query that yields no results
         response = self.client.get('/api/foodtruck/search/', {'q': 'nonexistent'})
 
         # Check that the response status code is 200 (OK)
         self.assertEqual(response.status_code, 200)
 
         # Check that the count is 0
-        self.assertEqual(response.json()['count'], 0)
-        
+        self.assertEqual(response.json()['count'], 0)        
         
 class TestLocationValidation(TestCase):
     def test_valid_location_params(self):
@@ -228,7 +237,6 @@ class TestOpenHoursParsing(TestCase):
             with self.subTest(input_str=input_str):
                 self.assertEqual(parse_open_hours(input_str), expected_output)
 
-
     def test_invalid_open_hours(self):
         # Test with invalid open hours string
         open_hours_str = "Invalid format"
@@ -237,5 +245,3 @@ class TestOpenHoursParsing(TestCase):
         # Test with empty string
         open_hours_str = ""
         self.assertEqual(parse_open_hours(open_hours_str), {})
-
-        
