@@ -5,7 +5,6 @@ from .serializers import FoodSerializer
 
 food_collection = db['food']
 
-# Create your views here.
 class SearchFoods(APIView):
     def get(self, request):
         query = {}

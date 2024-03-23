@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from .serializers import FoodTruckSerializer
 from django.http import JsonResponse
 from foodTruck.db_connection import db
-from .utils import validate_location
+from .utils import validate_location_params
 
 # get food truck collection
 food_truck_collection = db['food_truck']
@@ -13,14 +13,15 @@ food_truck_collection = db['food_truck']
 class NearbyFoodTrucks(APIView):
     def get(self, request):
         query_params = request.query_params
-        latitude = float(query_params.get('latitude', 0))  # Assuming latitude is provided as a float
-        longitude = float(query_params.get('longitude', 0)) 
-        is_valid = validate_location(latitude,longitude)
-        location = [longitude, latitude]      
+        latitude = query_params.get('latitude', 0)  # Assuming latitude is provided as a float
+        longitude = query_params.get('longitude', 0)
+        radius = query_params.get('radius', 1000)
+
+        is_valid = validate_location_params(latitude,longitude,radius)
         if not is_valid:
-            return Response({'error_message': "{} is not a valid location.".format(list(reversed(location))),}, status=http_status.HTTP_400_BAD_REQUEST)
-        
-        radius = float(query_params.get('radius', 1000))
+            return Response({'error_message': "invalid location filter parameter",}, status=http_status.HTTP_400_BAD_REQUEST)
+        location = [float(longitude), float(latitude)]      
+
         # A query that filters food tracks with in <radius> meters from the <location> center
         query = {
         'location': {
@@ -29,7 +30,7 @@ class NearbyFoodTrucks(APIView):
                     'type': 'Point',
                     'coordinates': location
                     },
-                '$maxDistance': radius, 
+                '$maxDistance': float(radius), 
  
                 }
             }
@@ -44,7 +45,7 @@ class AllFoodTrucks(APIView):
             # fetch all food trucks from database
             all_food_trucks = food_truck_collection.find()
             serializer = FoodTruckSerializer(all_food_trucks, many=True)
-            return Response(serializer.data)
+            return Response({'count': len(serializer.data), 'data': serializer.data})
         
         
 class SearchFoodTrucks(APIView):
@@ -59,9 +60,9 @@ class SearchFoodTrucks(APIView):
         radius = query_params.get('radius', None)# Radius for geospatial search
         
         if latitude and longitude:
-            is_valid = validate_location(float(latitude),float(longitude))
+            is_valid = validate_location_params(latitude,longitude,radius)
             if not is_valid:
-                return Response({'error_message': "{}, {} is not a valid location".format(latitude,longitude)},status=http_status.HTTP_400_BAD_REQUEST)
+                return Response({'error_message': "invalid location filter parameter"},status=http_status.HTTP_400_BAD_REQUEST)
         
 
         # MongoDB connection

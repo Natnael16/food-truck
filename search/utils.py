@@ -1,15 +1,11 @@
-def validate_location(latitude : float, longitude: float):
-        """
-            Validate latitude and longitude values.
-            Args:
-                latitude (float): Latitude value.
-                longitude (float): Longitude value.
-            Returns:
-                bool: True if latitude and longitude are valid, False otherwise.
-        """
-        if not (-90 <= latitude <= 90):
+def validate_location_params(latitude , longitude,radius):
+     
+        if not (str(latitude).isdigit() and str(longitude).isdigit() and str(radius).isdigit()):
+            return False
+            
+        if not (-90 <= float(latitude) <= 90):
             return False  # Latitude is out of range
-        if not (-180 <= longitude <= 180):
+        if not (-180 <= float(longitude) <= 180):
             return False  # Longitude is out of range
         return True
 
