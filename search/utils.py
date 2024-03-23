@@ -1,11 +1,11 @@
 def validate_location_params(latitude , longitude,radius):
-     
-        if not (str(latitude).isdigit() and str(longitude).isdigit() and str(radius).isdigit()):
+        try:
+            latitude,longitude,radius = float(latitude),float(longitude),float(radius)
+        except:
             return False
-            
-        if not (-90 <= float(latitude) <= 90):
+        if not (-90 <= latitude <= 90):
             return False  # Latitude is out of range
-        if not (-180 <= float(longitude) <= 180):
+        if not (-180 <= longitude <= 180): 
             return False  # Longitude is out of range
         return True
 
@@ -21,7 +21,8 @@ def parse_open_hours(open_hours_str):
         if len(parts) != 2:
             continue
 
-        day_part, hour_part = parts[0], parts[1]
+        day_part, hour_part = parts[0].strip(), parts[1].strip()
+        
 
         days = set()
         if '/' in day_part:
@@ -34,9 +35,11 @@ def parse_open_hours(open_hours_str):
             for index in range(start_index, end_index + 1):
                 days.add(list(day_mapping.values())[index])
         else:
-            days.add(day_mapping.get(day_part, day_part))
-
+            days.add(day_mapping.get(day_part,day_part))
+        
+            
         time_slots = []
+        
         for time_slot in hour_part.split('/'):
             start_time, end_time = time_slot.split('-')
             time_slots.append({"start_time": start_time, "end_time": end_time})

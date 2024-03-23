@@ -2,7 +2,7 @@ from django.test import TestCase, Client
 from unittest.mock import patch
 from .views import food_truck_collection
 from .serializers import FoodTruckSerializer
-
+from .utils import parse_open_hours,validate_location_params
 class NearByFoodTrucksTest(TestCase):
     def setUp(self):
         self.mock_return_value = {
@@ -25,7 +25,7 @@ class NearByFoodTrucksTest(TestCase):
             self.mock_return_value
             ]
 
-        response = self.client.get('http://127.0.0.1:8000/api/foodtruck/nearby/', {'latitude': 0, 'longitude': 0, 'radius': 1000})
+        response = self.client.get('/api/foodtruck/nearby/', {'latitude': 0, 'longitude': 0, 'radius': 1000})
 
         # Check that the response status code is 200 (OK)
         self.assertEqual(response.status_code, 200)
@@ -44,7 +44,7 @@ class NearByFoodTrucksTest(TestCase):
             self.mock_return_value
             ]
 
-        response = self.client.get('http://127.0.0.1:8000/api/foodtruck/nearby/', {'latitude': -95, 'longitude': 0, 'radius': 1000}) #having invalid latitude to make it fail
+        response = self.client.get('/api/foodtruck/nearby/', {'latitude': -95, 'longitude': 0, 'radius': 1000}) #having invalid latitude to make it fail
 
         # Check that the response status code is 200 (OK)
         self.assertEqual(response.status_code, 400)
@@ -114,6 +114,8 @@ class SearchFoodTrucksTest(TestCase):
             'data': self.mock_return_value
         }
         self.assertEqual(response.json(), expected_data)
+        
+    @patch.object(food_truck_collection, 'aggregate')
     def test_search_food_trucks_success_with_appropriate_location_params(self, mock_aggregate):
         # Mock the MongoDB aggregate method
         mock_aggregate.return_value = self.mock_return_value
@@ -171,3 +173,69 @@ class SearchFoodTrucksTest(TestCase):
 
         # Check that the count is 0
         self.assertEqual(response.json()['count'], 0)
+        
+        
+class TestLocationValidation(TestCase):
+    def test_valid_location_params(self):
+        # Test with valid parameters
+        self.assertTrue(validate_location_params(37.7749, -122.4194, 1000))
+
+    def test_invalid_latitude(self):
+        # Test with invalid latitude
+        self.assertFalse(validate_location_params(100, -122.4194, 1000))
+
+    def test_invalid_longitude(self):
+        # Test with invalid longitude
+        self.assertFalse(validate_location_params(37.7749, -200, 1000))
+
+    def test_invalid_radius(self):
+        # Test with invalid radius
+        self.assertFalse(validate_location_params(37.7749, -122.4194, "not_a_number"))
+
+class TestOpenHoursParsing(TestCase):
+    def test_valid_open_hours(self):
+        # Test with valid open hours string
+        open_hours_str = "Mo-Th:11AM-5PM; Fr:10AM-6PM"
+        expected_result = {
+            "Monday": [{"start_time": "11AM", "end_time": "5PM"}],
+            "Tuesday": [{"start_time": "11AM", "end_time": "5PM"}],
+            "Wednesday": [{"start_time": "11AM", "end_time": "5PM"}],
+            "Thursday": [{"start_time": "11AM", "end_time": "5PM"}],
+            "Friday": [{"start_time": "10AM", "end_time": "6PM"}]
+        }
+        self.assertEqual(parse_open_hours(open_hours_str), expected_result)
+        
+    def test_parse_open_hours_test_cases(self):
+        # Representative test cases covering different formats and scenarios
+        test_cases = [
+            ("Mo-Fr:3PM-4PM", {"Monday": [{"start_time": "3PM", "end_time": "4PM"}], 
+                               "Tuesday": [{"start_time": "3PM", "end_time": "4PM"}], 
+                               "Wednesday": [{"start_time": "3PM", "end_time": "4PM"}], 
+                               "Thursday": [{"start_time": "3PM", "end_time": "4PM"}], 
+                               "Friday": [{"start_time": "3PM", "end_time": "4PM"}]}),
+            ("Mo-Fr:6AM-7AM/11AM-12PM", {"Monday": [{"start_time": "6AM", "end_time": "7AM"}, {"start_time": "11AM", "end_time": "12PM"}], 
+                                         "Tuesday": [{"start_time": "6AM", "end_time": "7AM"}, {"start_time": "11AM", "end_time": "12PM"}], 
+                                         "Wednesday": [{"start_time": "6AM", "end_time": "7AM"}, {"start_time": "11AM", "end_time": "12PM"}], 
+                                         "Thursday": [{"start_time": "6AM", "end_time": "7AM"}, {"start_time": "11AM", "end_time": "12PM"}], 
+                                         "Friday": [{"start_time": "6AM", "end_time": "7AM"}, {"start_time": "11AM", "end_time": "12PM"}]}),
+            ("Su/We/Sa:11AM-3PM", {"Sunday": [{"start_time": "11AM", "end_time": "3PM"}], 
+                                   "Wednesday": [{"start_time": "11AM", "end_time": "3PM"}], 
+                                   "Saturday": [{"start_time": "11AM", "end_time": "3PM"}]}),
+            # Add more representative test cases as needed
+        ]
+
+        for input_str, expected_output in test_cases:
+            with self.subTest(input_str=input_str):
+                self.assertEqual(parse_open_hours(input_str), expected_output)
+
+
+    def test_invalid_open_hours(self):
+        # Test with invalid open hours string
+        open_hours_str = "Invalid format"
+        self.assertEqual(parse_open_hours(open_hours_str), {})
+
+        # Test with empty string
+        open_hours_str = ""
+        self.assertEqual(parse_open_hours(open_hours_str), {})
+
+        
