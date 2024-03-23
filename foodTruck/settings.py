@@ -77,6 +77,7 @@ WSGI_APPLICATION = 'foodTruck.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+#! This part is here for the sake of running tests only
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
