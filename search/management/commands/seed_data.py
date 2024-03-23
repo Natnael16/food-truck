@@ -2,17 +2,17 @@ import csv
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from foodTruck.db_connection import db
-from foodTruck.utils import parse_open_hours
+from search.utils import parse_open_hours
 
 food_truck_collection = db['food_truck']
-foods_collection = db['foods']
+food_collection = db['food']
 
 class Command(BaseCommand):
     help = 'Seeds the food truck data from a CSV file'
 
     def handle(self, *args, **options):
         food_truck_collection.delete_many({})
-        foods_collection.delete_many({})
+        food_collection.delete_many({})
         
         csv_file_path = 'data/food-truck-data.csv'
         foods_set = set()
@@ -24,7 +24,7 @@ class Command(BaseCommand):
                 for food in food_items:
                     if food.title() not in foods_set: # O(1) opperation since it is checking in set
                         foods_set.add(food.title())
-                        foods_collection.insert_one({'name': food.strip().title()})
+                        food_collection.insert_one({'name': food.strip().title()})
                 data = {
                     'applicant': str(row['Applicant']),
                     'facility_type': str(row['FacilityType']) if row['FacilityType'] else 'Unknown',

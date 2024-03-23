@@ -12,6 +12,7 @@ django-filter = "*"
 mongoengine = "*"
 pandas = "*"
 django-rest-framework-mongoengine = "*"
+djongo = "*"
 
 [dev-packages]
 
